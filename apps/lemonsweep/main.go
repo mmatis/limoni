@@ -71,6 +71,11 @@ func main() {
 	if os.Getenv("TERM_PROGRAM") == "Apple_Terminal" && !flagSet("fps") {
 		*fps = 30
 	}
+	// A browser shows at most 60 a second, and the game shares its one
+	// thread with xterm.js: more frames only starve the drawing.
+	if runtime.GOOS == "js" && !flagSet("fps") {
+		*fps = 60
+	}
 
 	term, err := limoni.New()
 	if err != nil {
