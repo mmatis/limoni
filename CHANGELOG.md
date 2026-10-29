@@ -8,6 +8,41 @@ a patch bump (`v0.x.y`) does not.
 
 ## [Unreleased]
 
+### Added
+
+- `ImageRegion.ShiftX` / `ShiftY`: move a picture by fractions of a cell
+  for smooth motion. Kitty places it to the pixel; other protocols round
+  to whole cells.
+- `ImageRegion.Track`: name a moving picture so Kitty keeps one placement
+  for it and moves that placement in one step.
+- `ImageRegion.Clip`: the cells a picture must stay within. Kitty cuts a
+  shifted picture at the clip's edges; other protocols leave out a picture
+  that does not fit.
+- `graphics.AppendKittyPlaceID`, `AppendKittyPlaceOffset`,
+  `AppendKittyDeletePlacement` and `EncodeKittyTransmitSized`, which the
+  above use.
+
+### Changed
+
+- Only the pictures that changed are sent. Kitty placements keep ids tied
+  to their cells, and a frame changes only the placements that differ from
+  the last frame's; Sixel and iTerm2 pictures are sent again only when they
+  differ on the same cells. On a map of about a thousand small pictures a
+  move went from 117 KB to about 5 KB with Kitty's protocol, and from
+  4.4 MB to 88 KB with Sixel. Konsole no longer flashes between deleting
+  and placing. Frames with pictures take more processor time comparing
+  them: in a screen of 400, 16 µs instead of 14 µs when nothing changes
+  and 49 µs instead of 32 µs when one changes with Kitty (0 allocations,
+  unchanged).
+- Konsole shows pictures with Kitty's protocol when it names itself in its
+  XTVERSION reply. Before, Limoni did not list it as showing pictures.
+
+### Fixed
+
+- A transparent Sixel picture sets P2 to 1, so the terminal leaves the
+  pixels it skips showing what is behind them instead of filling them
+  with its background color.
+
 ## [v0.16.0] — 2026-10-27
 
 ### Breaking
