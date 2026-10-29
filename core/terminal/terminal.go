@@ -47,6 +47,10 @@ type Terminal struct {
 
 	// lastDrawnImages is the list of images drawn in the previous frame.
 	lastDrawnImages []ImageRegion
+	// lastByArea and changedImages are changedPictures' scratch space,
+	// kept across frames so it does not allocate.
+	lastByArea    map[cell.Rect]ImageRegion
+	changedImages []ImageRegion
 
 	// kitty is what kitty has been sent: see kittyImages.
 	kitty kittyImages
@@ -740,12 +744,17 @@ func wholeCellShifts(regions []ImageRegion) []ImageRegion {
 // changedPictures returns the pictures that differ from what the last frame
 // drew on the same cells: a new picture, a different one, or one at another
 // depth. A picture the last frame drew on the same cells stays on screen.
+// The result is valid until the next call.
 func (t *Terminal) changedPictures(regions []ImageRegion) []ImageRegion {
-	last := make(map[cell.Rect]ImageRegion, len(t.lastDrawnImages))
+	if t.lastByArea == nil {
+		t.lastByArea = make(map[cell.Rect]ImageRegion, len(t.lastDrawnImages))
+	}
+	last := t.lastByArea
+	clear(last)
 	for _, reg := range t.lastDrawnImages {
 		last[reg.Area] = reg
 	}
-	changed := regions[:0:0]
+	changed := t.changedImages[:0]
 	for _, reg := range regions {
 		prev, ok := last[reg.Area]
 		if ok && prev.Img == reg.Img && prev.ZIndex == reg.ZIndex && prev.Transparent == reg.Transparent {
@@ -753,6 +762,7 @@ func (t *Terminal) changedPictures(regions []ImageRegion) []ImageRegion {
 		}
 		changed = append(changed, reg)
 	}
+	t.changedImages = changed
 	return changed
 }
 
